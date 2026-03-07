@@ -1,0 +1,44 @@
+travel planner - task list
+==========================
+
+DONE
+----
+[x] set up project structure (backend + frontend folders, root package.json with concurrently)
+[x] postgres db setup - schema.sql with all tables
+[x] backend - express server, cors, rate limiting
+[x] auth - register/login with bcrypt, jwt access+refresh tokens
+[x] jwt middleware for protected routes
+[x] trips crud - create, list, get, update, delete, duplicate
+[x] itinerary - auto create days based on trip date range
+[x] activities - add/edit/delete per day, has cost/location/category/time fields
+[x] expenses - log expenses per trip, delete own expenses
+[x] budget chart - doughnut chart with chart.js, budget progress bar
+[x] collaborators - invite by email, change role, remove
+    roles: owner / editor / viewer
+[x] comments on activities
+[x] socket.io realtime - activity add/update/delete, expense logged, presence
+[x] map page - react-leaflet with geoapify tiles, shows activity locations
+[x] favorites - save/remove places
+[x] pdf export - html2canvas + jspdf
+[x] responsive layout - navbar + sidebar, mobile drawer
+[x] protected routes, axios interceptor for auto token refresh
+
+
+TODO / IDEAS (not started)
+--------------------------
+[ ] packing list per trip
+[ ] trip cover photo upload
+[ ] public trip sharing via link (token is in db already, just need the page)
+[ ] notifications when collaborator adds something
+[ ] activity reordering (drag and drop) - order_index col is already in db
+[ ] search/filter trips on dashboard
+[ ] dark mode
+[ ] email invites (currently just adds user directly, they need to already have an account)
+[ ] mobile app version maybe later
+
+
+BUGS / ISSUES
+-------------
+- need to test what happens when two people edit same activity at same time
+- map doesnt always load on first render if geoapify key is missing, need better error msg
+- no loading state on trip duplicate button, could double-submit

@@ -1,0 +1,109 @@
+travel planner - implementation notes
+
+
+
+
+DB
+--
+using postgres with uuid primary keys (gen_random_uuid via pgcrypto extension)
+all foreign keys have ON DELETE CASCADE so cleanup is automatic
+
+tables:
+  users - id, username, email, password_hash, avatar, bio
+  trips - id, title, destination, start/end date, owner_id, status, budget, is_public, public_token
+  collaborations - trip_id + user_id + role (owner/editor/viewer), unique constraint on pair
+  itineraries - one per trip (1:1 with trip_id UNIQUE)
+  itinerary_days - belongs to itinerary, has day_index + date + notes
+  activities - belongs to itinerary, day_index, title, time, cost, location, lat/lng, category, order_index
+  expenses - per trip, per user, amount, category, date, description
+  favorite_places - per user, place_name, lat/lng, place_id
+  comments - per activity, user_id, content
+  refresh_tokens - user_id, token text, expires_at
+
+indexes on: trips.owner_id, collaborations.trip_id+user_id, activities.itinerary_id+day_index,
+            expenses.trip_id, comments.activity_id, refresh_tokens.user_id
+
+
+AUTH
+----
+- bcrypt for password hashing (saltRounds 10)
+- access token: 15min expiry, stored in localStorage
+- refresh token: 7 days, stored in postgres (not httpOnly cookie, easier for now)
+- on 401 response axios interceptor calls /auth/refresh automatically, retries original request
+- logout deletes refresh token from db
+
+JWT secrets are in .env - should be changed in prod obviously
+
+
+BACKEND STRUCTURE
+-----------------
+routes -> controllers pattern
+middleware: auth.js (verifies JWT), validate.js (Joi schemas), errorHandler.js
+
+activities route exports two routers:
+  main router: /trips/:id/itinerary/days/:dayIndex/activities  (nested under itinerary)
+  standaloneRouter: /activities  (for getting single activity by id, editing, deleting by activity id)
+  same pattern for expenses and comments
+  this is because express router params dont pass down from parent, needed separate router for standalone ops
+
+socket.io:
+  client sends access token in socket.handshake.auth.token
+  server verifies it on connection
+  rooms are named by tripId, everyone in same trip gets updates
+  events: activity_added, activity_updated, activity_deleted, expense_logged, user_joined, user_left
+
+
+FRONTEND STRUCTURE
+------------------
+/src
+  /api         - axios calls per feature (auth, trips, itinerary, activities, expenses, collaborations, favorites)
+  /components  - reusable pieces (ActivityCard, DayCard, BudgetChart, TripMap, InviteModal, etc)
+  /contexts    - AuthContext (user + tokens), TripContext (trips list for dashboard)
+  /hooks       - useAuth, useSocket
+  /pages       - one file per route
+  /utils       - formatters.js (dates, currency, status styles, category labels)
+
+routing:
+  /login, /register  (public)
+  /dashboard         (protected)
+  /trips/:id         (trip overview + collab list)
+  /trips/:id/itinerary
+  /trips/:id/budget
+  /trips/:id/collaborators
+  /favorites
+
+auth flow:
+  login stores accessToken in localStorage + user in AuthContext
+  ProtectedRoute checks context, redirects to /login if not authed
+  axios instance in api/axios.js has request interceptor that adds Bearer token
+  response interceptor catches 401, calls refresh, updates token, retries
+
+map:
+  react-leaflet + leaflet
+  tiles from geoapify (osm-bright style), needs VITE_GEOAPIFY_API_KEY in frontend .env
+  shows markers for all activities that have lat/lng
+  graceful fallback if no api key (still renders map, just default osm tiles)
+
+PDF export:
+  html2canvas screenshots the itinerary page content
+  jspdf converts canvas to pdf, prompts download
+  done client-side, no server involvement
+
+
+KNOWN QUIRKS
+------------
+- activities route module.exports trick: exports both router and standaloneRouter on same object
+  works because express routers are just functions (JS objects), can add properties to them
+
+- TripContext fetches trips list once on mount, individual trip data is fetched per page
+  so if you update a trip on the detail page, dashboard card wont reflect until refresh
+  could fix with a refetch callback but leaving for now
+
+- collaborations check: when fetching collaborators the controller checks if requesting user
+  is in the collaborations table for that trip. owner is always inserted into collaborations
+  table when trip is created (see tripController.js createTrip)
+
+- itinerary days are auto-generated when itinerary is first fetched (lazy creation in controller)
+  if trip dates change, days are NOT automatically updated - would need a separate endpoint
+
+- rate limiting: 200 req/15min on /api/, stricter 20 req/15min on /api/auth/
