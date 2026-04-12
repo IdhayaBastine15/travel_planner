@@ -36,7 +36,12 @@ async function createTrip(req, res, next) {
         [itinResult.rows[0].id, i, dates[i].toISOString().split('T')[0]]);
     }
     await client.query('COMMIT');
-    res.status(201).json(trip);
+    const full = await pool.query(
+      `SELECT t.*, u.username as owner_username, 'owner' as my_role
+       FROM trips t JOIN users u ON u.id=t.owner_id WHERE t.id=$1`,
+      [trip.id]
+    );
+    res.status(201).json(full.rows[0]);
   } catch (err) { await client.query('ROLLBACK'); next(err); } finally { client.release(); }
 }
 
@@ -118,7 +123,12 @@ async function duplicateTrip(req, res, next) {
       }
     }
     await client.query('COMMIT');
-    res.status(201).json(trip);
+    const full = await pool.query(
+      `SELECT t.*, u.username as owner_username, 'owner' as my_role
+       FROM trips t JOIN users u ON u.id=t.owner_id WHERE t.id=$1`,
+      [trip.id]
+    );
+    res.status(201).json(full.rows[0]);
   } catch (err) { await client.query('ROLLBACK'); next(err); } finally { client.release(); }
 }
 

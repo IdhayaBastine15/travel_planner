@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createTrip } from '../../api/trips';
+import LocationSearch from '../Map/LocationSearch';
 
 const INITIAL = { title: '', destination: '', start_date: '', end_date: '', description: '', budget: '', status: 'draft' };
 
@@ -38,7 +39,14 @@ export default function CreateTripModal({ isOpen, onClose, onCreated }) {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {error && <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>}
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Trip Title *</label><input name="title" value={form.title} onChange={handleChange} className="input" placeholder="Summer Europe Adventure" /></div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Destination *</label><input name="destination" value={form.destination} onChange={handleChange} className="input" placeholder="Paris, France" /></div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Destination *</label>
+                <LocationSearch
+                  value={form.destination}
+                  placeholder="Search city or country..."
+                  onChange={({ name }) => setForm((p) => ({ ...p, destination: name }))}
+                />
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label><input type="date" name="start_date" value={form.start_date} onChange={handleChange} className="input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">End Date *</label><input type="date" name="end_date" value={form.end_date} onChange={handleChange} className="input" /></div>
