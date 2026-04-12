@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { TripProvider } from './contexts/TripContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Navbar from './components/Layout/Navbar';
 import Sidebar from './components/Layout/Sidebar';
@@ -32,6 +33,7 @@ function AppLayout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ErrorBoundary>
       <AuthProvider>
         <TripProvider>
           <Routes>
@@ -48,6 +50,7 @@ export default function App() {
           </Routes>
         </TripProvider>
       </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

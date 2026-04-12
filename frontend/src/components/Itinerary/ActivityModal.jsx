@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { addActivity, updateActivity } from '../../api/activities';
+import LocationSearch from '../Map/LocationSearch';
 
-const EMPTY = { title: '', category: 'other', start_time: '', end_time: '', location_name: '', cost: '', notes: '' };
+const EMPTY = { title: '', category: 'other', start_time: '', end_time: '', location_name: '', lat: null, lng: null, place_id: null, cost: '', notes: '' };
 
 export default function ActivityModal({ isOpen, onClose, onSaved, tripId, dayIndex, activity }) {
   const [form, setForm] = useState(EMPTY);
@@ -12,7 +13,7 @@ export default function ActivityModal({ isOpen, onClose, onSaved, tripId, dayInd
   const isEdit = !!activity;
 
   useEffect(() => {
-    if (activity) setForm({ title: activity.title||'', category: activity.category||'other', start_time: activity.start_time||'', end_time: activity.end_time||'', location_name: activity.location_name||'', cost: activity.cost !== undefined ? String(activity.cost) : '', notes: activity.notes||'' });
+    if (activity) setForm({ title: activity.title||'', category: activity.category||'other', start_time: activity.start_time||'', end_time: activity.end_time||'', location_name: activity.location_name||'', lat: activity.lat||null, lng: activity.lng||null, place_id: activity.place_id||null, cost: activity.cost !== undefined ? String(activity.cost) : '', notes: activity.notes||'' });
     else setForm(EMPTY);
     setError('');
   }, [activity, isOpen]);
@@ -22,7 +23,7 @@ export default function ActivityModal({ isOpen, onClose, onSaved, tripId, dayInd
     if (!form.title.trim()) return setError('Title is required');
     setLoading(true); setError('');
     try {
-      const payload = { ...form, cost: form.cost ? parseFloat(form.cost) : 0 };
+      const payload = { ...form, cost: form.cost ? parseFloat(form.cost) : 0, lat: form.lat || undefined, lng: form.lng || undefined, place_id: form.place_id || undefined };
       const result = isEdit ? await updateActivity(activity.id, payload) : await addActivity(tripId, dayIndex, payload);
       onSaved(result.data, isEdit); onClose();
     } catch (err) { setError(err.response?.data?.error || 'Failed to save activity'); }
@@ -51,7 +52,17 @@ export default function ActivityModal({ isOpen, onClose, onSaved, tripId, dayInd
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label><input type="time" value={form.start_time} onChange={(e) => setForm((p) => ({ ...p, start_time: e.target.value }))} className="input" /></div>
                 <div><label className="block text-sm font-medium text-gray-700 mb-1">End Time</label><input type="time" value={form.end_time} onChange={(e) => setForm((p) => ({ ...p, end_time: e.target.value }))} className="input" /></div>
               </div>
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Location</label><input value={form.location_name} onChange={(e) => setForm((p) => ({ ...p, location_name: e.target.value }))} className="input" placeholder="Eiffel Tower, Paris" /></div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <LocationSearch
+                  value={form.location_name}
+                  placeholder="Search a place..."
+                  onChange={({ name, lat, lng, place_id }) => setForm((p) => ({ ...p, location_name: name, lat: lat ?? null, lng: lng ?? null, place_id: place_id ?? null }))}
+                />
+                {form.lat && form.lng && (
+                  <p className="text-xs text-green-600 mt-1">📍 Pinned on map ({Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)})</p>
+                )}
+              </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost (USD)</label><input type="number" value={form.cost} onChange={(e) => setForm((p) => ({ ...p, cost: e.target.value }))} className="input" placeholder="0" min="0" step="0.01" /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} className="input resize-none" rows={3} /></div>
               <div className="flex gap-3 pt-1">

@@ -21,7 +21,7 @@ module.exports = function setupTripSocket(io) {
       io.to(tripId).emit('user_presence', { tripId, users: [...presence.get(tripId)].map((u) => ({ userId: u.userId, username: u.username })) });
     });
 
-    socket.on('leave_trip', (tripId) => { socket.leave(tripId); removePresence(tripId, socket.id); broadcastPresence(io, tripId, presence); });
+    socket.on('leave_trip', (tripId) => { socket.leave(tripId); removePresence(tripId, socket.id, presence); broadcastPresence(io, tripId, presence); });
     socket.on('activity_added', (data) => socket.to(data.tripId).emit('activity_added', data));
     socket.on('activity_updated', (data) => socket.to(data.tripId).emit('activity_updated', data));
     socket.on('activity_deleted', (data) => socket.to(data.tripId).emit('activity_deleted', data));
@@ -30,12 +30,12 @@ module.exports = function setupTripSocket(io) {
     socket.on('new_comment', (data) => socket.to(data.tripId).emit('new_comment', data));
 
     socket.on('disconnect', () => {
-      if (socket.currentTripId) { removePresence(socket.currentTripId, socket.id); broadcastPresence(io, socket.currentTripId, presence); }
+      if (socket.currentTripId) { removePresence(socket.currentTripId, socket.id, presence); broadcastPresence(io, socket.currentTripId, presence); }
     });
   });
 };
 
-function removePresence(tripId, socketId) {
+function removePresence(tripId, socketId, presence) {
   if (!presence.has(tripId)) return;
   for (const u of presence.get(tripId)) { if (u.socketId === socketId) { presence.get(tripId).delete(u); break; } }
 }

@@ -59,7 +59,7 @@ export default function ItineraryPage() {
           <button onClick={handleExport} className="btn-secondary text-sm no-print"><Download size={15} />Export PDF</button>
         </div>
       </div>
-      {showMap && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden"><TripMap activities={allActivities} /></motion.div>}
+      {showMap && <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden"><TripMap activities={allActivities} destination={trip?.destination} /></motion.div>}
       <div ref={printRef} className="space-y-4">
         {itinerary?.days?.map((day) => <DayCard key={day.id} day={day} canEdit={canEdit} tripId={tripId} onActivityAdded={handleActivityAdded} onActivityUpdated={handleActivityUpdated} onActivityDeleted={handleActivityDeleted} socketEmit={emit} />)}
       </div>
